@@ -8,27 +8,38 @@
 require 'nokogiri'
 require 'open-uri'
 require 'pp'
+require 'thor'
 
 require 'gsfe/slice_fixer'
 
-# Get a Nokogiri::HTML::Document for the page we’re interested in...
-input_file = ARGV[0]
-puts input_file
-doc = Nokogiri::XML(open(input_file))
+module Gsfe
+	class CLI < Thor
 
-mail = Gsfe::SliceFixer.new(doc)
-mail.add_image_fix
-mail.fix_link_target
-mail.add_td_size_from_img
-mail.fix_img_src
+		desc "import FILE", "Create HAML template from html FILE"
+		def import filename
+			# Get a Nokogiri::HTML::Document for the page we’re interested in...
+			input_file = ARGV[0]
+			puts input_file
+			doc = Nokogiri::XML(open(input_file))
 
-File.open('out','w') do |f|
-	f.puts mail.to_xml
+			mail = Gsfe::SliceFixer.new(doc)
+			mail.add_image_fix
+			mail.fix_link_target
+			mail.add_td_size_from_img
+			mail.fix_img_src
+
+			File.open('out','w') do |f|
+				f.puts mail.to_xml
+			end
+
+			mail.cleanup
+
+			system("bundle exec html2haml --html-attributes < 'out' > #{input_file}.haml")
+			FileUtils.rm_f "out"
+
+		end
+	end
 end
 
-mail.cleanup
+Gsfe::CLI.start(ARGV)
 
-system("bundle exec html2haml --html-attributes < 'out' > #{input_file}.haml")
-FileUtils.rm_f "out"
-
-#pp doc
