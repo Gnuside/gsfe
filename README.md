@@ -1,4 +1,4 @@
-# Gsfe
+# Gsfe : Gimp Slicer For Emailings
 
 TODO: Write a gem description
 
