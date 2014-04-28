@@ -6,10 +6,10 @@ require 'gsfe/version'
 Gem::Specification.new do |spec|
   spec.name          = "gsfe"
   spec.version       = Gsfe::VERSION
-  spec.authors       = ["@@@No user configured@@@"]
-  spec.email         = ["@@@No user configured@@@"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.authors       = ["Glenn Y. Rolland"]
+  spec.email         = ["glenn.rolland@gnuside.com"]
+  spec.summary       = %q{A converter for GIMP slices.}
+  spec.description   = %q{A converter for GIMP slices.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
