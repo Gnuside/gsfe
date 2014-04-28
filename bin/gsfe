@@ -16,9 +16,8 @@ module Gsfe
 	class CLI < Thor
 
 		desc "import FILE", "Create HAML template from html FILE"
-		def import filename
+		def import input_file
 			# Get a Nokogiri::HTML::Document for the page we’re interested in...
-			input_file = ARGV[0]
 			puts input_file
 			doc = Nokogiri::XML(open(input_file))
 
@@ -36,7 +35,6 @@ module Gsfe
 
 			system("bundle exec html2haml --html-attributes < 'out' > #{input_file}.haml")
 			FileUtils.rm_f "out"
-
 		end
 	end
 end
