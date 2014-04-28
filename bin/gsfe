@@ -1,14 +1,21 @@
 #!/usr/bin/env ruby
 
 # Add image_fix to images - DONE
-# == Remove the A in A(href="#") > IMG patterns
 # Add image size into table cell - DONE
-# Convert to haml --html-attributes
+# Convert to haml - DONE
+# - use --html-attributes - DONE
+# Remove the A in A(href="#") > IMG patterns
+# Automate GIMP slicing
+# - http://docs.gimp.org/fr/python-fu-slice.html
 
 require 'nokogiri'
 require 'open-uri'
 require 'pp'
 require 'thor'
+
+require 'html2haml'
+require 'html2haml/exec'
+#require 'pry'
 
 require 'gsfe/slice_fixer'
 
@@ -18,7 +25,10 @@ module Gsfe
 		desc "import FILE", "Create HAML template from html FILE"
 		def import input_file
 			# Get a Nokogiri::HTML::Document for the page we’re interested in...
-			puts input_file
+			output_file = input_file.gsub(/.html$/,'.html.haml')
+			STDERR.puts " Input: #{input_file}"
+			STDERR.puts "Output: #{output_file}"
+
 			doc = Nokogiri::XML(open(input_file))
 
 			mail = Gsfe::SliceFixer.new(doc)
@@ -31,9 +41,41 @@ module Gsfe
 				f.puts mail.to_xml
 			end
 
-			mail.cleanup
 
-			system("bundle exec html2haml --html-attributes < 'out' > #{input_file}.haml")
+			File.open('out','w') do |f|
+				f.puts mail.to_xml
+			end
+
+			html2haml_opts = {
+				erb: true,
+				html_style_attributes: true
+			}
+
+#			begin
+#				File.open(output_file, 'w') do |output|
+#					pry.binding
+# 					output.write(
+#						::Html2haml::HTML.new(
+#							input_file, 
+#							html2haml_opts
+#						).render
+#					)
+#				end
+#			rescue ::Haml::Error => e
+#				raise "#{e.is_a?(::Haml::SyntaxError) ? "Syntax error" : "Error"} on line " +
+#					"#{get_line e}: #{e.message}"
+#			end
+
+			system %Q{html2haml --html-attributes < 'out' > "#{output_file}"}
+			if not $?.success? then
+				STDERR.puts "ERROR converting HTML to HAML. Aborting."
+				exit 1
+			end
+
+			mail.cleanup
+			FileUtils.rm_f input_file
+
+		ensure
 			FileUtils.rm_f "out"
 		end
 	end
