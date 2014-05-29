@@ -62,24 +62,26 @@ module Gsfe
 					img[:src] = img_dest
 				end
 
-#				elsif img_props[:colors] == 1 then
-#					img_set_bgcolor = true
-#					img_dir = File.dirname img_src
-#					img_dest = File.join img_dir, "spacer.gif"
-#					puts "Remplacing #{img_src} with spacer.gif"
-#					if not File.exist? img_dest then
-#						system "convert -size 1x1 xc:\"rgba(0,0,0,0)\" \"#{img_dest}\""
-#					end
-#					# append src removables 
-#					@removables << img_src
-#
-#					img[:src] = img_dest
-#				end
+				elsif img_props[:colors] == 1 then
+					img_set_bgcolor = true
+					img_dir = File.dirname img_src
+					img_width = img_props[:geometry_width]
+					img_height = img_props[:geometry_height]
+					img_dest = File.join img_dir, "spacer-#{img_width}-#{img_height}.gif"
+					puts "Remplacing #{img_src} with spacer.gif"
+					if not File.exist? img_dest then
+						system "convert -size #{img_width}x#{img_height} xc:\"rgba(0,0,0,0)\" \"#{img_dest}\""
+					end
+					# append src removables 
+					@removables << img_src
 
-#				if img_set_bgcolor then
-#					td = img.xpath('./ancestor::td[1]').first
-#					td['bgcolor'] = img_props[:histogram_color]
-#				end
+					img[:src] = img_dest
+				end
+
+				if img_set_bgcolor then
+					td = img.xpath('./ancestor::td[1]').first
+					td['bgcolor'] = img_props[:histogram_color]
+				end
 			end
 
 			@document = doc
