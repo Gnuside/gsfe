@@ -1,173 +1,85 @@
 #!/usr/bin/env ruby
 
 # Add image_fix to images - DONE
-# == Remove the A in A(href="#") > IMG patterns
 # Add image size into table cell - DONE
-# Convert to haml --html-attributes
+# Convert to haml - DONE
+# - use --html-attributes - DONE
+# Remove the A in A(href="#") > IMG patterns
+# Automate GIMP slicing
+# - http://docs.gimp.org/fr/python-fu-slice.html
 
 require 'nokogiri'
 require 'open-uri'
 require 'pp'
+require 'thor'
 
-# Get a Nokogiri::HTML::Document for the page we’re interested in...
-#
-class GSMailer
-	def initialize doc
-		@document = doc
-		@removables = []
-		@properties = {}
-		return self
-	end
+require 'html2haml'
+require 'html2haml/exec'
+#require 'pry'
 
-	def to_xml
-		return @document.to_xml(indent:1, indent_text:"\t")
-	end
+require 'gsfe/slice_fixer'
 
-	def cleanup
-		@removables.each do |file|
- 			FileUtils.rm_f file
-		end
-	end
+module Gsfe
+	class CLI < Thor
 
-	def add_image_fix
-		doc = @document.clone
+		desc "import FILE", "Create HAML template from html FILE"
+		def import input_file
+			# Get a Nokogiri::HTML::Document for the page we’re interested in...
+			output_file = input_file.gsub(/.html$/,'.html.haml')
+			STDERR.puts " Input: #{input_file}"
+			STDERR.puts "Output: #{output_file}"
 
-		doc.css('img').each do |img|
-			img['class'] = 'image_fix'
-		end
+			doc = Nokogiri::XML(open(input_file))
 
-		@document = doc 
-		return self
-	end
+			mail = Gsfe::SliceFixer.new(doc)
+			mail.add_image_fix
+			mail.fix_link_target
+			mail.add_td_size_from_img
+			mail.fix_img_src
 
-	def fix_link_target
-		doc = @document.clone
-
-		doc.css('a').each do |link|
-			link['target'] = '_blank'
-		end
-
-		@document = doc
-		return self
-	end
-
-	def fix_img_src
-		doc = @document.clone
-
-		doc.css('td img').each do |img|
-			# get image width
-			img_set_bgcolor = false
-			img_src = img['src']
-
-			# analyse image & get colors
-			# if only one color, generate a single pixel image.
-			# if many colors,  convert to high-quality jpg
-			img_props = image_properties img_src
-
-			if img_props[:colors] > 256 then
-				img_dest = img_src.gsub(/.png$/,'.jpg')
-				puts "Converting #{img_src} to JPEG (colors: #{img_props[:colors]})"
-				system "convert -quality 99 \"#{img_src}\" \"#{img_dest}\""
-				# append source to removables
-				@removables << img_src
-				img[:src] = img_dest
-
-			elsif img_props[:colors] == 1 then
-				img_set_bgcolor = true
-				img_dir = File.dirname img_src
-				img_dest = File.join img_dir, "spacer.gif"
-				puts "Remplacing #{img_src} with spacer.gif"
-				if not File.exist? img_dest then
-					system "convert -size 1x1 xc:\"rgba(0,0,0,0)\" \"#{img_dest}\""
-				end
-				# append src removables 
-				@removables << img_src
-
-				img[:src] = img_dest
+			File.open('out','w') do |f|
+				f.puts mail.to_xml
 			end
 
-			if img_set_bgcolor then
-				td = img.xpath('./ancestor::td[1]').first
-				td['bgcolor'] = img_props[:histogram_color]
+
+			File.open('out','w') do |f|
+				f.puts mail.to_xml
 			end
-		end
 
-		@document = doc
-		return self
-	end
+			html2haml_opts = {
+				erb: true,
+				html_style_attributes: true
+			}
 
-	def add_td_size_from_img
-		doc = @document.clone
+#			begin
+#				File.open(output_file, 'w') do |output|
+#					pry.binding
+# 					output.write(
+#						::Html2haml::HTML.new(
+#							input_file, 
+#							html2haml_opts
+#						).render
+#					)
+#				end
+#			rescue ::Haml::Error => e
+#				raise "#{e.is_a?(::Haml::SyntaxError) ? "Syntax error" : "Error"} on line " +
+#					"#{get_line e}: #{e.message}"
+#			end
 
-		doc.css('td img').each do |img|
-			# get image width
-			img_src=img['src']
-
-			# get image information & report into TD
-			img_props = image_properties img_src
-
-			td = img.xpath('./ancestor::td[1]').first
-			td['width'] = img_props[:geometry_width]
-			td['height'] = img_props[:geometry_height]
-		end
-
-		@document = doc
-		return self
-	end
-
-	def image_properties img_src
-		if @properties.include? img_src then
-			return @properties[img_src]
-		end
-		props = {}
-		img_ident = []
-		IO.popen(%Q{identify -verbose -unique "#{img_src}"}) do |f|
-			img_ident = f.readlines.map(&:strip)
-		end
-		histogram = false
-		img_ident.each do |line|
-			case line
-			when /Colors:\s+(\d+)$/ then
-				props[:colors] = $1.to_i
-			when /Geometry:\s+(\d+)x(\d+)/ then
-				props[:geometry_width] = $1
-				props[:geometry_height] = $2
- 			when /Histogram:/ then
-				histogram = true
-			when /Rendering intent:/ then
-				histogram = false
-			else 
-				if histogram then
-					props[:histogram_color] = line.gsub(
-						/^.*(#[0-9a-fA-F]+).*$/,
-						'\1'
-					)
-				end
+			system %Q{html2haml --html-attributes < 'out' > "#{output_file}"}
+			if not $?.success? then
+				STDERR.puts "ERROR converting HTML to HAML. Aborting."
+				exit 1
 			end
-		end
 
-		@properties[img_src] = props
-		return @properties[img_src]
+			mail.cleanup
+			FileUtils.rm_f input_file
+
+		ensure
+			FileUtils.rm_f "out"
+		end
 	end
 end
 
-input_file = ARGV[0]
-puts input_file
-doc = Nokogiri::XML(open(input_file))
+Gsfe::CLI.start(ARGV)
 
-mail = GSMailer.new(doc)
-mail.add_image_fix
-mail.fix_link_target
-mail.add_td_size_from_img
-mail.fix_img_src
-
-File.open('out','w') do |f|
-	f.puts mail.to_xml
-end
-
-mail.cleanup
-
-system("bundle exec html2haml --html-attributes < 'out' > #{input_file}.haml")
-FileUtils.rm_f "out"
-
-#pp doc
