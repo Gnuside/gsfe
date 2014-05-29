@@ -68,7 +68,7 @@ module Gsfe
 					img_width = img_props[:geometry_width]
 					img_height = img_props[:geometry_height]
 					img_dest = File.join img_dir, "spacer-#{img_width}-#{img_height}.gif"
-					puts "Remplacing #{img_src} with spacer.gif"
+					puts "Remplacing #{img_src} with #{File.basename img_dest}"
 					if not File.exist? img_dest then
 						system "convert -size #{img_width}x#{img_height} xc:\"rgba(0,0,0,0)\" \"#{img_dest}\""
 					end
