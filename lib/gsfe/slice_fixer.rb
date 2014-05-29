@@ -60,7 +60,6 @@ module Gsfe
 					# append source to removables
 					@removables << img_src
 					img[:src] = img_dest
-				end
 
 				elsif img_props[:colors] == 1 then
 					img_set_bgcolor = true
