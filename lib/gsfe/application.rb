@@ -115,7 +115,7 @@ module Gsfe
 		end
 
 		def load prefix, options
-			opts = options.to_hash
+			opts = options.dup
 			opts.delete("save")
 			if @config.include? prefix.to_s then
 				STDERR.puts "merging config :)"
@@ -127,7 +127,7 @@ module Gsfe
 			return @config[prefix.to_s]
 		end
 
-		def save prefix, options
+		def save prefix
 			File.open('.gsfe', 'w') do |f|
  			  	f.write @config.to_yaml
 			end
