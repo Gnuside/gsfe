@@ -23,19 +23,39 @@ require 'gsfe/slice_fixer'
 module Gsfe
 	class CLI < Thor
 
-		def initialize *args, app
-			super *args
+		def initialize *args
 			@app = Gsfe::Application.new
+			super *args
 		end
 
+		option :save, type: :boolean
 		desc "import FILE", "Create HAML template from html FILE"
 		def import input_file
 			# Get a Nokogiri::HTML::Document for the page we’re interested in...
 			output_file = input_file.gsub(/.html$/,'.html.haml')
+			STDERR.puts "Importing..."
 			STDERR.puts " Input: #{input_file}"
 			STDERR.puts "Output: #{output_file}"
 
-			@app.import input_file, output_file
+			opts = @app.load :publish, options
+			@app.import input_file, output_file, opts
+			@app.save :import if options[:save]
+		end
+
+		option :absolute, type: :boolean
+		option :url, type: :string
+		option :save, type: :boolean
+		desc "publish", "Export newsletter"
+		def publish
+			# Get a Nokogiri::HTML::Document for the page we’re interested in...
+			#output_file = input_file.gsub(/.html$/,'.html.haml')
+			#STDERR.puts " Input: #{input_file}"
+			#STDERR.puts "Output: #{output_file}"
+			STDERR.puts "Publishing..."
+
+			opts = @app.load :publish, options
+			@app.publish opts
+			@app.save :publish if options[:save]
 		end
 	end
 end
