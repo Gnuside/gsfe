@@ -17,66 +17,45 @@ require 'html2haml'
 require 'html2haml/exec'
 #require 'pry'
 
+require 'gsfe/application'
 require 'gsfe/slice_fixer'
 
 module Gsfe
 	class CLI < Thor
 
+		def initialize *args
+			@app = Gsfe::Application.new
+			super *args
+		end
+
+		option :save, type: :boolean
 		desc "import FILE", "Create HAML template from html FILE"
 		def import input_file
 			# Get a Nokogiri::HTML::Document for the page we’re interested in...
 			output_file = input_file.gsub(/.html$/,'.html.haml')
+			STDERR.puts "Importing..."
 			STDERR.puts " Input: #{input_file}"
 			STDERR.puts "Output: #{output_file}"
 
-			doc = Nokogiri::XML(open(input_file))
+			opts = @app.load :publish, options
+			@app.import input_file, output_file, opts
+			@app.save :import if options[:save]
+		end
 
-			mail = Gsfe::SliceFixer.new(doc)
-			mail.add_image_fix
-			mail.fix_link_target
-			mail.add_td_size_from_img
-			mail.fix_img_src
+		option :absolute, type: :boolean
+		option :url, type: :string
+		option :save, type: :boolean
+		desc "publish", "Export newsletter"
+		def publish
+			# Get a Nokogiri::HTML::Document for the page we’re interested in...
+			#output_file = input_file.gsub(/.html$/,'.html.haml')
+			#STDERR.puts " Input: #{input_file}"
+			#STDERR.puts "Output: #{output_file}"
+			STDERR.puts "Publishing..."
 
-			File.open('out','w') do |f|
-				f.puts mail.to_xml
-			end
-
-
-			File.open('out','w') do |f|
-				f.puts mail.to_xml
-			end
-
-			html2haml_opts = {
-				erb: true,
-				html_style_attributes: true
-			}
-
-#			begin
-#				File.open(output_file, 'w') do |output|
-#					pry.binding
-# 					output.write(
-#						::Html2haml::HTML.new(
-#							input_file, 
-#							html2haml_opts
-#						).render
-#					)
-#				end
-#			rescue ::Haml::Error => e
-#				raise "#{e.is_a?(::Haml::SyntaxError) ? "Syntax error" : "Error"} on line " +
-#					"#{get_line e}: #{e.message}"
-#			end
-
-			system %Q{html2haml --html-attributes < 'out' > "#{output_file}"}
-			if not $?.success? then
-				STDERR.puts "ERROR converting HTML to HAML. Aborting."
-				exit 1
-			end
-
-			mail.cleanup
-			FileUtils.rm_f input_file
-
-		ensure
-			FileUtils.rm_f "out"
+			opts = @app.load :publish, options
+			@app.publish opts
+			@app.save :publish if options[:save]
 		end
 	end
 end
