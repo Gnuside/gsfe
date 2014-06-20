@@ -4,9 +4,6 @@ require 'yaml'
 module Gsfe
 	class Application
 		def initialize
-			if not File.exist? "config.rb" then
-				fail "ERROR: please run the script from project root"
-			end
 			@config = {}
 			if File.exist? ".gsfe" then
 				@config = YAML.load_file('.gsfe')
@@ -51,6 +48,10 @@ module Gsfe
 
 
 		def publish options
+			if not File.exist? "config.rb" then
+				fail "ERROR: please run the script from project root"
+			end
+
 			sed = %x{which gsed ||which sed}.strip
 			zip = %x{which zip}.strip
 
