@@ -58,6 +58,9 @@ module Gsfe
 			# FIXME: Use configuration file
 			project_dir = Dir.pwd
 			project_name = File.basename Dir.pwd
+			if options['suffix'] then
+				project_name += "-%s" % options['suffix']
+			end
 			if File.exist? ".rename-from-data" then
 				project_shortname = project_name.gsub(/^(.*?-){3}/,'')
 				project_date = %x{readlink data}.strip.gsub(/^((.*?-){3}).*$/,'\1')
@@ -93,13 +96,13 @@ module Gsfe
   			FileUtils.mv "build", "public/#{project_name}"
 
 			done = false
-			suffix = 0
+			version = 0
 
 			while !done do
 
 				archive_name = 
-					if suffix > 1 then
-					   	"#{project_name}-v#{suffix}.zip"
+					if version > 1 then
+					   	"#{project_name}-v#{version}.zip"
       			   	else
 					   	"#{project_name}.zip"
 				   	end
@@ -109,7 +112,7 @@ module Gsfe
 					system "#{zip} -r \"../#{archive_name}\" ."
           			done = true
       			end
-	  			suffix += 1
+	  			version += 1
 			end
 			Dir.chdir project_dir
   	  	  	STDERR.puts "Generated file public/#{archive_name}"
