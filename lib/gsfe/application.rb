@@ -58,6 +58,9 @@ module Gsfe
 			# FIXME: Use configuration file
 			project_dir = Dir.pwd
 			project_name = File.basename Dir.pwd
+			if options['suffix'] then
+				project_name += "-%s" % options['suffix']
+			end
 			if File.exist? ".rename-from-data" then
 				project_shortname = project_name.gsub(/^(.*?-){3}/,'')
 				project_date = %x{readlink data}.strip.gsub(/^((.*?-){3}).*$/,'\1')
@@ -73,17 +76,17 @@ module Gsfe
 			# REWRITE URLS
 			if options['absolute'] then
 				STDERR.puts "Rewriting urls with #{options['url']}"
-				fail "No URL defined for rewrite" if (not options.include? 'url') 
+				fail "No URL defined for rewrite" if (not options.include? 'url')
 				system '%s -i -e "s|\([\"\'(]\)images/|\1%s/images/|" build/*.html' % [
  			   		sed, options['url'].gsub(/\/$/,'')
 				]
 			end
 			system '%s -i -e "s|{{PROJECT_NAME}}|%s|" build/*.html' % [
 				sed, project_name
- 			]	
+ 			]
 
 			#REMOVE DOCTYPE
-  			system "#{sed} -i -e \"/DOCTYPE/d\" build/*.html"
+  		# system "#{sed} -i -e \"/DOCTYPE/d\" build/*.html"
 
   			# Rewrite HEIGHT to MAX-HEIGHT
   			system '%s -i -e "s/\([^-]\)height: *\([0-9]*\)px/\1height: \2px; max-height: \2px/g" build/*.html' % sed
@@ -93,13 +96,13 @@ module Gsfe
   			FileUtils.mv "build", "public/#{project_name}"
 
 			done = false
-			suffix = 0
+			version = 0
 
 			while !done do
 
-				archive_name = 
-					if suffix > 1 then
-					   	"#{project_name}-v#{suffix}.zip"
+				archive_name =
+					if version > 1 then
+					   	"#{project_name}-v#{version}.zip"
       			   	else
 					   	"#{project_name}.zip"
 				   	end
@@ -109,7 +112,7 @@ module Gsfe
 					system "#{zip} -r \"../#{archive_name}\" ."
           			done = true
       			end
-	  			suffix += 1
+	  			version += 1
 			end
 			Dir.chdir project_dir
   	  	  	STDERR.puts "Generated file public/#{archive_name}"
