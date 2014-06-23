@@ -45,6 +45,7 @@ module Gsfe
 		option :absolute, type: :boolean
 		option :url, type: :string
 		option :save, type: :boolean
+		option :suffix, type: :string
 		desc "publish", "Export newsletter"
 		def publish
 			# Get a Nokogiri::HTML::Document for the page we’re interested in...
