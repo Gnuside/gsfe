@@ -76,17 +76,17 @@ module Gsfe
 			# REWRITE URLS
 			if options['absolute'] then
 				STDERR.puts "Rewriting urls with #{options['url']}"
-				fail "No URL defined for rewrite" if (not options.include? 'url') 
+				fail "No URL defined for rewrite" if (not options.include? 'url')
 				system '%s -i -e "s|\([\"\'(]\)images/|\1%s/images/|" build/*.html' % [
  			   		sed, options['url'].gsub(/\/$/,'')
 				]
 			end
 			system '%s -i -e "s|{{PROJECT_NAME}}|%s|" build/*.html' % [
 				sed, project_name
- 			]	
+ 			]
 
 			#REMOVE DOCTYPE
-  			system "#{sed} -i -e \"/DOCTYPE/d\" build/*.html"
+  		# system "#{sed} -i -e \"/DOCTYPE/d\" build/*.html"
 
   			# Rewrite HEIGHT to MAX-HEIGHT
   			system '%s -i -e "s/\([^-]\)height: *\([0-9]*\)px/\1height: \2px; max-height: \2px/g" build/*.html' % sed
@@ -100,7 +100,7 @@ module Gsfe
 
 			while !done do
 
-				archive_name = 
+				archive_name =
 					if version > 1 then
 					   	"#{project_name}-v#{version}.zip"
       			   	else
